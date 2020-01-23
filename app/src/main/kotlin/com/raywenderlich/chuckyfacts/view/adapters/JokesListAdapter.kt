@@ -36,7 +36,6 @@ import kotlinx.android.synthetic.main.card_view_custom_layout.view.*
 
 class JokesListAdapter(private var listener: (Joke?) -> Unit, private var dataList: List<Joke>?) : RecyclerView.Adapter<JokesListAdapter.ViewHolder>() {
 
-  // Creating card_view_custom_layout ViewHolder to speed up the performance
   inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     val tvId: TextView? = itemView.tv_id_card_view_custom_layout
     val tvJoke: TextView? = itemView.tv_joke_card_view_custom_layout

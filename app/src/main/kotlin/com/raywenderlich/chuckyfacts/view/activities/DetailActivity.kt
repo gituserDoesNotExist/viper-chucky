@@ -22,15 +22,104 @@
 
 package com.raywenderlich.chuckyfacts.view.activities
 
+import android.content.Intent
 import android.os.Bundle
+import android.os.Parcelable
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.Toolbar
+import android.util.Log
+import android.view.MenuItem
+import android.widget.TextView
+import com.raywenderlich.chuckyfacts.BaseApplication
+import com.raywenderlich.chuckyfacts.DetailContract
 import com.raywenderlich.chuckyfacts.R
+import com.raywenderlich.chuckyfacts.entity.Joke
+import com.raywenderlich.chuckyfacts.presenter.DetailPresenter
+import kotlinx.android.synthetic.main.activity_detail.*
+import kotlinx.android.synthetic.main.toolbar_view_custom_layout.*
+import org.jetbrains.anko.toast
+import ru.terrakok.cicerone.Navigator
+import ru.terrakok.cicerone.commands.Command
+import ru.terrakok.cicerone.commands.Forward
 
-class DetailActivity : AppCompatActivity() {
+class DetailActivity : BaseActivity(), DetailContract.View {
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_main)
-  }
+    companion object {
+        val TAG = "DetailActivity"
+    }
+
+    private var presenter: DetailContract.Presenter? = null
+    private val toolbar: Toolbar by lazy { toolbar_toolbar_view }
+    private val tvId: TextView? by lazy { tv_joke_id_activity_detail }
+    private val tvJoke: TextView? by lazy { tv_joke_activity_detail }
+
+
+    private val navigator: Navigator? by lazy {
+        object : Navigator {
+            override fun applyCommand(command: Command) {   // 2
+                if (command is Forward) {
+                    forward(command)
+                }
+            }
+
+            private fun forward(command: Forward) {   // 3
+                val data = (command.transitionData as Joke)
+
+                when (command.screenKey) {
+                    DetailActivity.TAG -> startActivity(Intent(this@DetailActivity, DetailActivity::class.java)
+                            .putExtra("data", data as Parcelable))   // 4
+                    else -> Log.e("Cicerone", "Unknown screen: " + command.screenKey)
+                }
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        presenter = DetailPresenter(this)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        return when (item?.itemId) {
+            android.R.id.home -> {
+                presenter?.backButtonClicked()
+                true
+            }
+            else -> false
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        BaseApplication.INSTANCE.cicerone.navigatorHolder.setNavigator(navigator)
+        // add back arrow to toolbar
+        supportActionBar?.let {
+            supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        }
+        // load invoking arguments
+        val argument = intent.getParcelableExtra<Joke>("data")
+        argument?.let { presenter?.onViewCreated(it) }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        BaseApplication.INSTANCE.cicerone.navigatorHolder.setNavigator(navigator)
+    }
+
+    override fun getToolbarInstance(): Toolbar? {
+        return toolbar
+    }
+
+
+    override fun showJokeData(id: String, joke: String) {
+        tvId?.text = id
+        tvJoke?.text = joke
+    }
+
+    override fun showInfoMessage(msg: String) {
+        toast(msg)
+    }
 
 }
